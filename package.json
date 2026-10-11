@@ -1,0 +1,74 @@
+{
+  "name": "dsh-sandman",
+  "version": "1.0.0",
+  "description": "【预览版 · 娱乐性项目，非生产级】九层之台：DSH 桌面端本地记忆插件。四层九位倒金字塔（画像/项目/文库/底档）+ 热度晋升 + 三档做梦（微巩固/轻梦/深梦）+ 写门/路由双决策件 + 记忆馆长（时效改写 · 冲突仲裁 · 云端/本地/主路由三模式）。Preview / hobby-grade local-first memory plugin for DeepSeek Harness — not for production use.",
+  "license": "MIT",
+  "type": "module",
+  "author": "九层之台 contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cwy-jun/dsh-sandman.git"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "agent-memory",
+    "memory",
+    "local-first",
+    "sqlite",
+    "fts5"
+  ],
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json",
+    "./client": "./lib/client.js"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/core.test.mjs tests/m2m6.test.mjs tests/api.test.mjs tests/lock.test.mjs tests/curator-dialogue.test.mjs tests/persona-chat.test.mjs tests/m4-v4.test.mjs",
+    "seed": "node tests/seed.mjs"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.2 <0.2.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "marketplace": {
+      "profiles": [
+        "desktop"
+      ],
+      "requiresBuildApproval": false,
+      "requiresRestart": true,
+      "manualSteps": false
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  }
+}

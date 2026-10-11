@@ -1,0 +1,24 @@
+# 依赖与构建产物
+node_modules/
+lib/
+.testbuild/
+
+# 运行数据（绝不入库）
+*.db
+*.db-wal
+*.db-shm
+backups/
+tests/.tmp/
+tests/.sandbox/
+tests/.demo/
+.preview/
+
+# 个人数据脚本（含作者私有记忆内容，开源前请替换为你自己的导入脚本）
+scripts/import-workbuddy-memory.mjs
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

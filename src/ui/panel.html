@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>九层之台 · dsh-sandman</title>
+<style>
+/* ── 设计系统：现代主义中式（宣纸 · 墨 · 朱砂）──
+   几何：零圆角、细线分割、严格栅格；字：宋体标题 + 黑体正文；色：大面积留白，朱砂仅点睛。 */
+:root{
+  --paper:#F6F3EB;          /* 宣纸 */
+  --paper2:#EFEAD9;         /* 深一档的纸 */
+  --card:#FDFCF8;           /* 卡片纸 */
+  --ink:#22211C;            /* 松烟墨 */
+  --ink2:#6E6A5E;           /* 淡墨 */
+  --ink3:#A39E8C;           /* 枯墨 */
+  --hair:#D9D3BF;           /* 细线 */
+  --seal:#B23B2E;           /* 朱砂 */
+  --pine:#2E6E5E;           /* 松绿（成功/项目层） */
+  --azure:#33566E;          /* 黛蓝（文库层） */
+  --ochre:#A67C2E;          /* 藤黄赭（画像层/暖热度） */
+  --serif:"Noto Serif SC","Source Han Serif SC","STSong","SimSun",serif;
+  --sans:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  --mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font:14px/1.75 var(--sans);display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--hair);padding:7px 11px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--ink)}
+::selection{background:var(--paper2);color:var(--seal)}
+
+/* ── 顶栏 ── */
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 26px;border-bottom:1px solid var(--hair);background:var(--paper);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .seal{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--seal);color:#FDFCF8;font:700 19px var(--serif);box-shadow:2px 2px 0 var(--paper2)}
+.brand h1{font:700 20px var(--serif);letter-spacing:6px}
+.brand small{color:var(--ink2);font-size:12px;letter-spacing:2px;border-left:1px solid var(--hair);padding-left:12px}
+.search{flex:1;min-width:180px;max-width:420px;display:flex;gap:0}
+.search input{flex:1;border-right:none}
+.thermo{font-size:12px;color:var(--ink2);white-space:nowrap}
+.thermo b{font-family:var(--mono);color:var(--ink)}
+.btn{border:1px solid var(--ink);padding:6px 16px;background:transparent;color:var(--ink);letter-spacing:1px;transition:all .12s;white-space:nowrap}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:var(--seal);border-color:var(--seal);color:#FDFCF8}
+.btn.danger{color:var(--seal);border-color:var(--seal)}
+.btn.danger:hover{background:var(--seal);color:#FDFCF8}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.active{background:var(--ink);color:var(--paper)}
+
+/* ── 主体 ── */
+.main{flex:1;display:flex;min-height:0}
+.sidebar{width:216px;border-right:1px solid var(--hair);padding:18px 12px;overflow-y:auto;background:var(--paper);flex:none}
+.side-title{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--ink2);letter-spacing:4px;margin:10px 8px 10px;font-family:var(--serif)}
+.side-title::before{content:"";width:18px;height:1px;background:var(--ink3)}
+.layer-band{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;text-align:left;margin-bottom:4px;border:1px solid transparent;border-left:3px solid transparent}
+.layer-band:hover{background:var(--paper2)}
+.layer-band.active{background:var(--paper2);border-left-color:var(--ink)}
+.dot{width:10px;height:10px;flex:none}
+.band-name{font-weight:600;letter-spacing:2px;font-family:var(--serif)}
+.band-count{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;margin-bottom:2px;color:var(--ink);border-left:3px solid transparent}
+.nav-item:hover{background:var(--paper2)}
+.nav-item.active{background:var(--paper2);border-left-color:var(--seal);font-weight:600}
+.nav-item .glyph{width:20px;text-align:center}
+.content{flex:1;overflow-y:auto;padding:26px 34px;min-width:0}
+h2.view-title{font:600 19px var(--serif);letter-spacing:4px;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+h2.view-title::after{content:"";flex:1;height:1px;background:var(--hair)}
+
+/* ── 卡片 ── */
+.section-head{display:flex;align-items:center;gap:12px;margin:22px 0 12px;cursor:pointer;user-select:none}
+.section-head:first-child{margin-top:4px}
+.section-head .bar{width:3px;height:20px}
+.section-head h2{font:600 17px var(--serif);letter-spacing:3px}
+.section-head .n{font-family:var(--mono);font-size:12px;color:var(--ink2);letter-spacing:1px}
+.proj-head{display:flex;align-items:center;gap:8px;margin:16px 0 8px;cursor:pointer}
+.proj-head:hover .pname{text-decoration:underline;text-underline-offset:4px}
+.proj-head .pname{font-weight:600;color:var(--pine);font-family:var(--serif);letter-spacing:1px}
+.proj-head .pn{font-size:12px;color:var(--ink2);font-family:var(--mono)}
+.card{background:var(--card);border:1px solid var(--hair);padding:13px 17px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.card:hover{border-color:var(--ink)}
+.card.selected{outline:2px solid var(--ink3)}
+.card-title{font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-family:var(--serif);letter-spacing:1px}
+.card-title .dot{width:8px;height:8px}
+.card-summary{color:var(--ink2);font-size:13px;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{display:flex;align-items:center;gap:12px;margin-top:8px;font-size:12px;color:var(--ink2);flex-wrap:wrap}
+.card-meta .heat{flex:1;max-width:110px;height:2px;background:var(--paper2);overflow:hidden}
+.card-meta .heat i{display:block;height:100%}
+.tag{border:1px solid var(--ink3);padding:0 7px;font-size:11px;color:var(--ink2);letter-spacing:1px}
+.tag.warn{color:var(--seal);border-color:var(--seal)}
+.tag.ok{color:var(--pine);border-color:var(--pine)}
+.card-body{margin-top:11px;border-top:1px solid var(--hair);padding-top:11px;white-space:pre-wrap}
+.card textarea{width:100%;min-height:140px;margin-top:10px;font-family:inherit}
+.card-actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
+.ver-list{margin-top:11px;font-size:12px;color:var(--ink2)}
+.ver-list li{list-style:none;margin:2px 0}
+
+/* ── 空态 ── */
+.empty{border:1px dashed var(--ink3);padding:36px;text-align:center;color:var(--ink2);background:var(--paper2)}
+.empty .big{font:600 16px var(--serif);color:var(--ink);margin-bottom:6px;letter-spacing:2px}
+
+/* ── 通用区块 ── */
+.rows{display:flex;flex-direction:column;gap:14px;max-width:840px}
+.row{background:var(--card);border:1px solid var(--hair);padding:16px 20px}
+.row h3{font:600 15px var(--serif);margin-bottom:5px;display:flex;gap:9px;align-items:center;letter-spacing:2px}
+.row p{color:var(--ink2);font-size:13px}
+.receipt{border-left:2px solid var(--seal);padding:7px 13px;margin:9px 0;background:var(--paper2);font-size:13px}
+.split{display:flex;gap:22px;align-items:flex-start}
+.panel-box{flex:1;min-width:0}
+.chat-log{border:1px solid var(--hair);background:var(--card);min-height:300px;max-height:520px;overflow-y:auto;padding:16px}
+.bubble{max-width:88%;padding:9px 15px;margin-bottom:11px;background:var(--paper2);font-size:13px;border-left:2px solid var(--ink3)}
+.bubble.mine{background:var(--card);border-left-color:var(--pine);margin-left:auto;border-right:2px solid var(--pine);border-left:none}
+.bubble .who{font-size:11px;color:var(--ink2);margin-bottom:3px;letter-spacing:1px}
+.bubble .src{font-size:11px;color:var(--ink2);margin-top:7px;border-top:1px dashed var(--hair);padding-top:5px}
+.chat-input{display:flex;gap:8px;margin-top:11px}
+.chat-input input{flex:1}
+.form-grid{display:grid;grid-template-columns:150px 1fr;gap:11px 15px;align-items:center;max-width:660px}
+.form-grid label{color:var(--ink2);font-size:13px;text-align:right;letter-spacing:2px}
+.form-grid .full{grid-column:2}
+.hint{font-size:12px;color:var(--ink2)}
+.tabs{display:flex;gap:0;margin-bottom:15px;flex-wrap:wrap}
+.tabs .btn{border-right:none}
+.tabs .btn:last-child{border-right:1px solid var(--ink)}
+.tabs .btn.active{background:var(--ink);color:var(--paper)}
+
+/* ── 项目五子位 ── */
+.slot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:13px}
+.slot-col{background:var(--paper2);border:1px solid var(--hair);border-top:3px solid var(--pine);padding:11px;min-height:120px}
+.slot-col h4{font:600 13px var(--serif);color:var(--pine);margin-bottom:9px;letter-spacing:4px}
+.mini-card{background:var(--card);border:1px solid var(--hair);padding:8px 11px;margin-bottom:7px;font-size:12px;cursor:pointer}
+.mini-card:hover{border-color:var(--ink)}
+.mini-card b{font-size:12px;font-family:var(--serif)}
+.mini-card .mm{color:var(--ink2);font-size:11px}
+
+/* ── 梦境 ── */
+.run{border:1px solid var(--hair);background:var(--card);margin-bottom:11px}
+.run-head{display:flex;align-items:center;gap:11px;padding:11px 17px;cursor:pointer}
+.run-head .kind{font-weight:600;font-family:var(--serif);letter-spacing:2px}
+.run-head .st{font-size:11px;border:1px solid var(--ink3);padding:0 7px;letter-spacing:1px}
+.run-head .st.done{color:var(--pine);border-color:var(--pine)}
+.run-head .st.interrupted{color:var(--seal);border-color:var(--seal)}
+.run-body{padding:0 17px 13px;border-top:1px solid var(--hair)}
+pre.dreams{background:var(--card);border:1px solid var(--hair);padding:18px;white-space:pre-wrap;font:13px/1.85 var(--sans);max-height:420px;overflow-y:auto}
+
+/* ── 审核 / 留痕 ── */
+table.fails{width:100%;border-collapse:collapse;font-size:12px}
+table.fails th,table.fails td{border:1px solid var(--hair);padding:6px 9px;text-align:left}
+table.fails th{background:var(--paper2);font-family:var(--serif);letter-spacing:2px}
+.sig-card{border:1px solid var(--hair);background:var(--card);padding:13px 17px;margin-bottom:10px;display:flex;gap:13px;align-items:flex-start;flex-wrap:wrap}
+.sig-card .grow{flex:1;min-width:200px}
+.change-item{border:1px solid var(--hair);background:var(--card);padding:13px 17px;margin-bottom:10px}
+.change-item .diff{display:grid;grid-template-columns:1fr 24px 1fr;gap:10px;margin-top:9px;font-size:12px}
+.change-item .diff .old{color:var(--ink2);background:var(--paper2);padding:8px 11px;text-decoration:line-through;text-decoration-color:var(--seal);text-decoration-thickness:1px}
+.change-item .diff .new{color:var(--ink);background:var(--paper2);padding:8px 11px}
+.change-item .diff .arrow{display:flex;align-items:center;justify-content:center;color:var(--seal);font-family:var(--serif)}
+
+/* ── modal / toast ── */
+.modal-mask{position:fixed;inset:0;background:rgba(34,33,28,.4);display:none;align-items:center;justify-content:center;z-index:20}
+.modal-mask.show{display:flex}
+.modal{background:var(--paper);border:1px solid var(--ink);padding:26px 30px;width:min(580px,92vw);max-height:86vh;overflow-y:auto;box-shadow:6px 6px 0 var(--paper2)}
+.modal h3{font:600 17px var(--serif);margin-bottom:16px;letter-spacing:4px}
+.modal .form-grid{grid-template-columns:110px 1fr}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 20px;display:none;gap:14px;align-items:center;z-index:30;font-size:13px;box-shadow:4px 4px 0 var(--paper2)}
+#toast button{color:var(--paper);text-decoration:underline;text-underline-offset:3px}
+@media (max-width:900px){.sidebar{display:none}.split{flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="seal">九</span><h1>九层之台</h1><small>起于累土</small></div>
+  <div class="search"><input id="q" placeholder="搜索全部记忆…" onkeydown="if(event.key==='Enter')doSearch()"><button class="btn" onclick="doSearch()">搜索</button></div>
+  <span class="thermo" id="thermo"></span>
+  <button class="btn primary" onclick="openAdd()">＋ 记一条</button>
+</header>
+<div class="main">
+  <nav class="sidebar" id="sidebar"></nav>
+  <section class="content" id="view"></section>
+</div>
+<div id="toast"></div>
+<div class="modal-mask" id="addMask" onclick="if(event.target===this)closeAdd()">
+  <div class="modal">
+    <h3>记一条</h3>
+    <div class="form-grid">
+      <label>层</label><select id="aLevel" onchange="syncSlots()"><option value="0">画像</option><option value="1">项目</option><option value="2">文库</option><option value="3" selected>底档</option></select>
+      <label>槽位</label><select id="aSlot"></select>
+      <label id="aProjLabel">项目</label><select id="aProj"></select>
+      <label>标题</label><input id="aTitle" placeholder="一句话标题">
+      <label>内容</label><textarea id="aContent" rows="5" placeholder="可复用的事实、决定、教训…"></textarea>
+      <label></label><div class="full" style="display:flex;gap:8px"><button class="btn primary" onclick="saveAdd()">保存</button><button class="btn" onclick="closeAdd()">取消</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── 基础 ── */
+const API='/dsh-sandman/api'
+const LAYERS=[
+  {level:0,name:'画像',color:'var(--ochre)',slots:['身份','偏好','规矩','目标']},
+  {level:1,name:'项目',color:'var(--pine)',slots:['结构','决策','待办','操作','复盘']},
+  {level:2,name:'文库',color:'var(--azure)',slots:['教训','提示词','规范','知识']},
+  {level:3,name:'底档',color:'var(--ink3)',slots:[]},
+]
+const SLOT_ZH={identity:'身份',preference:'偏好',rule:'规矩',goal:'目标',structure:'结构',decision:'决策',todo:'待办',ops:'操作',review:'复盘',lesson:'教训',prompt:'提示词',norm:'规范',knowledge:'知识'}
+const SLOT_EN={0:['identity','preference','rule','goal'],1:['structure','decision','todo','ops','review'],2:['lesson','prompt','norm','knowledge'],3:[]}
+const VIEWS=[['overview','总览','⛰'],['dream','梦境','🌙'],['review','审核','✓'],['curator','馆长','🎋'],['persona','个性化','🖌'],['settings','设置','⚙']]
+const $=s=>document.querySelector(s)
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+async function jget(p){const r=await fetch(API+p);return r.json()}
+async function jpost(p,b){const r=await fetch(API+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b??{})});return r.json()}
+const fmt=ts=>new Date(ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+function heatColor(h){return h>=1?'var(--ochre)':h>=0.4?'var(--pine)':'var(--ink3)'}
+function toast(msg,undo){const t=$('#toast');t.innerHTML=esc(msg)+(undo?` <button onclick='(${undo.toString()})();hideToast()'>撤销</button>`:'');t.style.display='flex';setTimeout(hideToast,4200)}
+function hideToast(){$('#toast').style.display='none'}
+function statusTag(s){
+  if(s==='active')return ''
+  const map={pending:['待审','warn'],quarantine:['隔离','warn'],invalid:['失效','warn'],stale:['冷',''],archived:['归档','']}
+  const m=map[s]||[s,'']
+  return `<span class="tag ${m[1]}">${m[0]}</span>`
+}
+
+/* ── 侧栏 ── */
+let LAYER_FILTER=null
+async function renderSidebar(){
+  const ov=await jget('/overview')
+  window.__ov=ov
+  $('#thermo').innerHTML=`记忆 <b>${ov.counts.total}</b> · 项目 <b>${ov.counts.projects}</b> · 注入 <b>${ov.inject?ov.inject.tokens:0}tok</b>${ov.capture?` · 捕获 <b>${ov.capture.kept+ov.capture.pending}</b>`:''}`
+  let h='<div class="side-title">层级</div>'
+  for(const L of LAYERS){
+    const n=ov.counts.byLevel?.[L.level]??0
+    h+=`<button class="layer-band ${LAYER_FILTER===L.level?'active':''}" onclick="filterLayer(${L.level})">
+      <span class="dot" style="background:${L.color}"></span>
+      <span class="band-name">${L.name}</span>
+      <span class="band-count">${n}</span></button>`
+  }
+  h+='<div class="side-title">视图</div>'
+  for(const [id,name,glyph] of VIEWS){
+    h+=`<button class="nav-item ${location.hash.startsWith('#/'+id)?'active':''}" onclick="location.hash='#/${id}'"><span class="glyph">${glyph}</span>${name}</button>`
+  }
+  $('#sidebar').innerHTML=h
+}
+function filterLayer(l){LAYER_FILTER=LAYER_FILTER===l?null:l;location.hash='#/overview';route()}
+
+/* ── 路由 ── */
+window.addEventListener('hashchange',route)
+function route(){
+  renderSidebar()
+  const h=location.hash||'#/overview'
+  if(h.startsWith('#/project'))return renderProject(new URLSearchParams(h.split('?')[1]||'').get('id'))
+  const v=h.slice(2).split('?')[0]
+  if(v==='dream')return renderDream()
+  if(v==='review')return renderReview()
+  if(v==='curator')return renderCurator()
+  if(v==='persona')return renderPersona()
+  if(v==='settings')return renderSettings()
+  return renderOverview()
+}
+
+/* ── 总览 ── */
+let SEL=-1
+async function renderOverview(){
+  const data=await jget('/cards'+(LAYER_FILTER!==null?`?level=${LAYER_FILTER}`:''))
+  const projects=Object.fromEntries((data.projects||[]).map(p=>[p.id,p.name]))
+  let h=''
+  for(const L of LAYERS){
+    if(LAYER_FILTER!==null&&L.level!==LAYER_FILTER)continue
+    const items=data.items.filter(c=>c.level===L.level)
+    h+=`<div class="section-head"><span class="bar" style="background:${L.color}"></span><h2>${L.name}</h2><span class="n">${items.length} 条${L.slots.length?' · '+L.slots.join('·'):' · 流水'}</span></div>`
+    if(items.length===0){
+      h+=`<div class="empty"><div class="big">「${L.name}」还空着</div>${L.level===0?'还没有你的画像——去聊 5 分钟，或点右上角「＋ 记一条」。':'对话积累后，相关记忆会沉淀到这里。'}</div>`
+      continue
+    }
+    if(L.level===1){
+      const byProj={}
+      for(const c of items){const p=c.project_id||'未归项目';(byProj[p]=byProj[p]||[]).push(c)}
+      for(const [pid,cs] of Object.entries(byProj)){
+        h+=`<div class="proj-head" ${pid!=='未归项目'?`onclick="location.hash='#/project?id=${encodeURIComponent(pid)}'"`:''}><span class="pname">${esc(projects[pid]||pid)}</span><span class="pn">${cs.length} 条 →</span></div>`
+        for(const c of cs)h+=cardHtml(c,projects)
+      }
+    }else{
+      for(const c of items)h+=cardHtml(c,projects)
+    }
+  }
+  $('#view').innerHTML=h||'<div class="empty"><div class="big">空空如也</div></div>'
+}
+function cardHtml(c,projects){
+  const w=Math.min(100,c.heat/1.5*100)
+  return `<article class="card" id="card-${esc(c.id)}" onclick="expandCard('${esc(c.id)}')">
+    <div class="card-title"><span class="dot" style="background:${LAYERS[c.level].color}"></span>${esc(c.title)}${statusTag(c.status)}</div>
+    <div class="card-summary">${esc(c.summary)}</div>
+    <div class="card-meta"><span>${esc(SLOT_ZH[c.slot]||(projects&&projects[c.project_id])||'')}</span><span>命中${c.hits||0}</span><span>v${c.version}</span><span>${fmt(c.updated_at)}</span>
+      <span class="heat"><i style="width:${w}%;background:${heatColor(c.heat)}"></i></span><span style="font-family:var(--mono)">${Number(c.heat).toFixed(2)}</span></div>
+    <div class="detail" style="display:none"></div>
+  </article>`
+}
+async function expandCard(id){
+  const card=document.getElementById('card-'+id);if(!card)return
+  const d=card.querySelector('.detail')
+  if(d.style.display!=='none'){d.style.display='none';return}
+  const full=await jget('/card?id='+encodeURIComponent(id))
+  const m=full.memory
+  d.innerHTML=`<div class="card-body">${esc(m.content)}</div>
+    <div class="card-meta" style="margin-top:10px"><span>heat <b style="font-family:var(--mono)">${Number(m.heat).toFixed(3)}</b></span><span>重要度 ${m.importance}</span><span>来源 ${esc(m.source)}</span><span>关键词 ${esc((JSON.parse(m.keywords||'[]')).join('、'))}</span></div>
+    <div class="card-actions">
+      <button class="btn" onclick="event.stopPropagation();editCard('${esc(id)}')">编辑</button>
+      ${m.status==='active'?`<button class="btn danger" onclick="event.stopPropagation();invalidateCard('${esc(id)}')">失效</button>`:`<button class="btn" onclick="event.stopPropagation();reactivate('${esc(id)}')">恢复 active</button>`}
+      <select onchange="event.stopPropagation();if(this.value)restoreVer('${esc(id)}',this.value)"><option value="">还原到版本…</option>${full.versions.map(v=>`<option value="${v.version}">v${v.version} · ${esc(v.changed_by)} · ${fmt(v.ts)}</option>`).join('')}</select>
+    </div>
+    <div class="ver-list">历史版本：${full.versions.map(v=>`v${v.version}(${esc(v.changed_by)})`).join(' → ')}</div>`
+  d.style.display='block'
+}
+async function editCard(id){
+  const card=document.getElementById('card-'+id);if(!card)return
+  const d=card.querySelector('.detail')
+  const full=await jget('/card?id='+encodeURIComponent(id))
+  d.innerHTML=`<textarea id="ta-${esc(id)}">${esc(full.memory.content)}</textarea>
+    <div class="card-actions"><button class="btn primary" onclick="event.stopPropagation();saveCard('${esc(id)}')">保存（版本+1）</button>
+    <button class="btn" onclick="event.stopPropagation();route()">取消</button></div>`
+  d.style.display='block'
+}
+async function saveCard(id){
+  const ta=document.getElementById('ta-'+id)
+  const resp=await jpost('/memory/edit',{id,content:ta.value})
+  if(resp.ok){toast('已保存，版本 +1');route()}else toast('保存失败：'+resp.error)
+}
+async function invalidateCard(id){
+  if(!confirm('标记失效？（不删除，可恢复）'))return
+  await jpost('/memory/status',{id,status:'invalid',note:'面板标记失效'})
+  toast('已失效',()=>jpost('/memory/status',{id,status:'active',note:'撤销失效'}).then(route))
+  route()
+}
+async function reactivate(id){await jpost('/memory/status',{id,status:'active',note:'面板恢复'});toast('已恢复');route()}
+async function restoreVer(id,v){await jpost('/memory/restore',{id,version:Number(v)});toast('已还原到 v'+v);route()}
+async function doSearch(){
+  const q=$('#q').value.trim();if(!q)return
+  const data=await jget('/cards?q='+encodeURIComponent(q))
+  $('#view').innerHTML=`<div class="section-head"><h2 style="font:600 17px var(--serif);letter-spacing:3px">搜索：${esc(q)}</h2><span class="n">${data.items.length} 条</span></div>`+
+    (data.items.length?data.items.map(c=>cardHtml(c,{})).join(''):'<div class="empty"><div class="big">没有命中</div>换个关键词试试。</div>')
+}
+
+/* ── 记一条 ── */
+async function openAdd(){
+  const data=await jget('/cards?level=1')
+  $('#aProj').innerHTML=(data.projects||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')
+  syncSlots()
+  $('#addMask').classList.add('show')
+}
+function closeAdd(){$('#addMask').classList.remove('show')}
+function syncSlots(){
+  const lv=Number($('#aLevel').value)
+  $('#aSlot').innerHTML=SLOT_EN[lv].length?SLOT_EN[lv].map(s=>`<option value="${s}">${SLOT_ZH[s]}</option>`).join(''):'<option value="">（无槽位）</option>'
+  $('#aProjLabel').style.display=lv===1?'':'none'
+  $('#aProj').style.display=lv===1?'':'none'
+}
+async function saveAdd(){
+  const lv=Number($('#aLevel').value)
+  const r=await jpost('/memory',{title:$('#aTitle').value,content:$('#aContent').value,level:lv,slot:$('#aSlot').value||null,projectId:lv===1?$('#aProj').value:null})
+  if(r.ok){closeAdd();toast('已记下');$('#aTitle').value='';$('#aContent').value='';route()}else toast('失败：'+r.error)
+}
+
+/* ── 项目页（五子位）── */
+async function renderProject(id){
+  if(!id){location.hash='#/overview';return}
+  const d=await jget('/project?id='+encodeURIComponent(id))
+  if(!d.ok){$('#view').innerHTML=`<div class="empty"><div class="big">${esc(d.error)}</div></div>`;return}
+  const names={structure:'结构',decision:'决策',todo:'待办',ops:'操作',review:'复盘'}
+  let h=`<button class="btn" onclick="location.hash='#/overview'">← 返回总览</button>
+    <h2 class="view-title" style="margin-top:14px">⛰ ${esc(d.project.name)}</h2>
+    <p class="hint" style="max-width:720px;margin-bottom:18px">${esc(d.project.profile)}</p>
+    <div class="slot-grid">`
+  for(const [slot,cards] of Object.entries(d.slots)){
+    h+=`<div class="slot-col"><h4>${names[slot]}</h4>`
+    h+=cards.length?cards.map(c=>`<div class="mini-card" onclick="location.hash='#/overview';setTimeout(()=>expandCard('${esc(c.id)}'),300)"><b>${esc(c.title)}</b><div class="mm">heat ${Number(c.heat).toFixed(2)} · ${fmt(c.updated_at)}</div></div>`).join(''):'<div class="hint">（空）</div>'
+    h+='</div>'
+  }
+  h+='</div>'
+  $('#view').innerHTML=h
+}
+
+/* ── 梦境 ── */
+async function renderDream(){
+  const st=await jget('/dream/status')
+  const runs=await jget('/dream/runs')
+  const journal=await jget('/dreams-journal')
+  const sch=st.schedule
+  $('#view').innerHTML=`<h2 class="view-title">🌙 梦境</h2>
+  <div class="rows">
+    <div class="row"><h3><span class="dot" style="background:var(--ink3)"></span>微巩固 · 免费</h3><p>每轮随对话自动：查重 / 计数 / 热度衰减。永远在线，无需配置。</p></div>
+    <div class="row"><h3><span class="dot" style="background:var(--azure)"></span>轻梦 · 每 ${sch.lightEveryTurns} 轮</h3><p>后台异步扫描：近重复、项目归属建议、审核积压。只产信号，馆长模型可用时会复核拿不准的信号。</p></div>
+    <div class="row"><h3><span class="dot" style="background:var(--pine)"></span>深梦 · 空闲 ${sch.deepIdleMinutes} 分钟</h3><p>唯一写库闸门：快照 → 抢锁 → 自动批 / 近重复合并 / 项目归属 / <b>冲突仲裁</b> / <b>时效改写</b> / 冷化（画像层有地板保护）→ 收据 → 梦境日记。峰时抑制：${sch.peakSuppress?'开':'关'}。所有改写旧文留痕，可在「审核 → 改写留痕」回看。</p>
+      <div class="card-actions" style="margin-top:9px">
+        <button class="btn" onclick="runDream('light')">跑一次轻梦</button>
+        <button class="btn" onclick="runDream('deep')">立即深梦</button>
+        <button class="btn primary" onclick="runDream('manual')">手动做梦</button></div></div>
+    <div class="row"><h3>收据时间轴</h3><div id="runs">${runs.items.length?runs.items.map(runHtml).join(''):'<p class="hint">还没有做过梦。</p>'}</div></div>
+    <div class="row"><h3>DREAMS.md · 梦境日记</h3>${journal.md?`<pre class="dreams">${esc(journal.md)}</pre>`:'<p class="hint">深梦跑过一遍后，这里会出现人能读的日记（也存进镜像目录「系统/DREAMS.md」）。</p>'}</div>
+  </div>`
+}
+function runHtml(r){
+  const stCls=r.status==='done'?'done':r.status==='interrupted'?'interrupted':''
+  return `<div class="run"><div class="run-head" onclick="this.parentElement.querySelector('.run-body').style.display=this.parentElement.querySelector('.run-body').style.display==='none'?'':'none'">
+    <span class="kind">${esc(r.kind)}</span><span class="st ${stCls}">${esc(r.status)}</span>
+    <span class="hint">${fmt(r.ts)}${r.snapshot_id?' · 快照 '+esc(r.snapshot_id):''} · #${r.id}</span></div>
+    <div class="run-body" style="display:none"><div class="receipt">${esc(r.receipt)}</div>
+    ${(r.decisions||[]).length?`<ul style="margin:7px 0 4px 16px;font-size:13px">${r.decisions.map(d=>`<li>${esc(d.note||d.why||d.reason||JSON.stringify(d))}</li>`).join('')}</ul>`:''}</div></div>`
+}
+async function runDream(kind){const r=await jpost('/dream/run',{kind});if(r.ok){toast('收据 #'+r.run.id+' 已记录');route()}else toast(r.error)}
+
+/* ── 审核 ── */
+let REVIEW_TAB=0
+const SIG_KIND={param:'调参提案',assign:'归属提案',promote:'晋升提案',resolve:'冲突仲裁'}
+const CHANGE_ZH={rewrite:'时效改写',arbitrate:'冲突仲裁',stale:'冷化',merge:'合并',promote:'晋升'}
+async function renderReview(){
+  // 深链接：#/review?tab=2 直达「改写留痕」
+  const tabParam=new URLSearchParams((location.hash.split('?')[1]||'')).get('tab')
+  if(tabParam!==null&&tabParam!==undefined&&tabParam!=='')REVIEW_TAB=Math.max(0,Math.min(3,Number(tabParam)||0))
+  const tabs=['待审卡','馆长提案','改写留痕','失败记忆']
+  let body=''
+  if(REVIEW_TAB===0){
+    const d=await jget('/review/pending')
+    body=d.items.length?
+      `<div class="card-actions" style="margin-bottom:11px"><button class="btn primary" onclick="batchDecide('approve')">批量通过</button><button class="btn danger" onclick="batchDecide('reject')">批量驳回</button><button class="btn" onclick="batchDecide('release')">隔离→转人审</button></div>`+
+      d.items.map(c=>`<label class="card" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="checkbox" class="rev-check" value="${esc(c.id)}" style="margin-top:4px">${cardInner(c)}</label>`).join('')
+      :'<div class="empty"><div class="big">审核队列空空如也</div>自动捕获的记忆（auditMode=all）会先躺在这里等你拍板；深梦每轮会自动批掉 ≤3 条低风险的。</div>'
+  }else if(REVIEW_TAB===1){
+    const d=await jget('/signals')
+    body=d.items.length?d.items.map(s=>`<div class="sig-card">
+      <input type="checkbox" class="sig-check" data-run="${s.runId}" data-idx="${s.index}" style="margin-top:4px">
+      <div class="grow"><b>${esc(SIG_KIND[s.proposal.action]||'提案')}</b>　${esc(s.proposal.reason||'')}${s.proposal.param?`<div class="hint" style="font-family:var(--mono)">${esc(s.proposal.param)}: ${s.proposal.current} → ${s.proposal.suggested}</div>`:''}<div class="hint">做梦收据 #${s.runId} · ${fmt(s.ts)}</div></div>
+      <div style="display:flex;gap:6px"><button class="btn primary" onclick="decideSignal(${s.runId},${s.index},'adopt')">采纳</button><button class="btn danger" onclick="decideSignal(${s.runId},${s.index},'reject')">驳回</button></div>
+    </div>`).join(''):'<div class="empty"><div class="big">没有待拍板的提案</div>深梦产出调参 / 归属 / 晋升 / 仲裁建议时会出现在这里，全部操作留痕可回滚。</div>'
+  }else if(REVIEW_TAB===2){
+    const d=await jget('/changes')
+    body=d.items.length?d.items.map(c=>`<div class="change-item">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="tag ${c.change_type==='rewrite'?'ok':'warn'}">${esc(CHANGE_ZH[c.change_type]||c.change_type)}</span>
+        <span class="hint" style="font-family:var(--mono)">${esc(String(c.memory_id)).slice(0,18)}…</span>
+        <span style="flex:1"></span><span class="hint">${fmt(c.created_at)}${c.dream_run_id?` · 收据 #${c.dream_run_id}`:''}</span>
+      </div>
+      ${c.reason?`<p class="hint" style="margin-top:6px">${esc(c.reason)}</p>`:''}
+      ${c.new_content?`<div class="diff"><div class="old">${esc(String(c.old_content||'').slice(0,180))}</div><div class="arrow">→</div><div class="new">${esc(String(c.new_content).slice(0,180))}</div></div>`:`<div class="hint" style="margin-top:6px">${esc(String(c.old_content||'').slice(0,120))}</div>`}
+    </div>`).join(''):'<div class="empty"><div class="big">还没有留痕</div>深梦做「时效改写」或采纳「冲突仲裁」后，旧文与新文成对留在这里——记忆可以被时间修正，但每一次修正都可回看。</div>'
+  }else{
+    const d=await jget('/review/failures')
+    body=d.items.length?`<table class="fails"><tr><th>判定</th><th>门1</th><th>时间</th></tr>${d.items.map(f=>`<tr><td>${esc(f.final_decision)}</td><td>${esc(f.g1_result)}</td><td>${fmt(f.ts)}</td></tr>`).join('')}</table>`
+      :'<div class="empty"><div class="big">没有失败记忆</div>写门拒绝/丢弃的记忆都会在这里留痕，绝不静默。</div>'
+  }
+  $('#view').innerHTML=`<h2 class="view-title">✓ 审核</h2><div class="tabs">${tabs.map((t,i)=>`<button class="btn ${REVIEW_TAB===i?'active':''}" onclick="REVIEW_TAB=${i};renderReview()">${t}</button>`).join('')}</div>${body}`
+}
+function cardInner(c){
+  return `<div style="flex:1"><div class="card-title"><span class="dot" style="background:${LAYERS[c.level].color}"></span>${esc(c.title)} ${statusTag(c.status)}</div>
+  <div class="card-summary">${esc(c.summary)}</div>
+  <div class="card-meta"><span>${esc(SLOT_ZH[c.slot]||'')}</span><span>${fmt(c.updated_at)}</span></div></div>`
+}
+async function batchDecide(action){
+  const ids=[...document.querySelectorAll('.rev-check:checked')].map(e=>e.value)
+  if(!ids.length)return toast('先勾选几条')
+  if(action==='reject'&&!confirm(`驳回 ${ids.length} 条？（标记失效，不删除）`))return
+  const r=await jpost('/review/decide',{ids,action})
+  if(r.ok){toast(`已处理 ${r.decided} 条`);renderReview();renderSidebar()}else toast(r.error)
+}
+async function decideSignal(runId,index,action){
+  const r=await jpost('/signals/decide',{runId,index,action})
+  if(r.ok){toast(action==='adopt'?'已采纳并留痕':'已驳回');renderReview()}else toast(r.error)
+}
+
+/* ── 馆长 ── */
+async function renderCurator(){
+  const cfg=(await jget('/config')).config
+  const curator=cfg.curator||{}
+  const runs=await jget('/dream/runs')
+  const check=await jget('/curator/selfcheck')
+  const chat=await jget('/curator/chat')
+  const reports=runs.items.filter(r=>r.kind!=='light').slice(0,4)
+  $('#view').innerHTML=`<h2 class="view-title">🎋 馆长</h2>
+  <div class="split">
+    <div class="panel-box">
+      <div class="chat-log" id="chatLog">
+        <div class="bubble"><div class="who">馆长 · 系统</div>我是你的记忆馆长：语义层唯一写入者。做梦摘要、健康报告、调参建议都会汇报到这里；你也可以问我记忆库里的任何事（我只读，改记忆要走提案）。对话历史已持久化，切换会话 / 重载面板不会丢。<br><br>自检：${check.check.ok?'✅':'❌'} ${esc(check.check.detail)} · 预算 ${check.budget?check.budget.used+'/'+check.budget.limit:''} tok</div>
+        ${reports.map(r=>`<div class="bubble"><div class="who">做梦收据 · ${fmt(r.ts)}</div>${esc(r.receipt)}</div>`).join('')}
+        ${(chat.items||[]).map(m=>m.role==='user'
+          ?`<div class="bubble mine"><div class="who">你 · ${fmt(m.created_at)}</div>${esc(m.content)}</div>`
+          :`<div class="bubble"><div class="who">馆长 · ${fmt(m.created_at)}</div>${esc(m.content)}</div>`).join('')}
+      </div>
+      <div class="chat-input"><input id="askQ" placeholder="问馆长：我的记忆里关于…" onkeydown="if(event.key==='Enter')askCurator()"><button class="btn primary" onclick="askCurator()">问</button><button class="btn" onclick="clearCuratorChat()" title="清空持久化对话历史">清空</button></div>
+    </div>
+    <div class="panel-box">
+      <div class="form-grid">
+        <label>模型模式</label><select id="cmode"><option value="dsh" ${curator.mode==='dsh'?'selected':''}>DSH 主路由（默认）</option><option value="cloud" ${curator.mode==='cloud'?'selected':''}>云端 API（OpenAI 兼容）</option><option value="local" ${curator.mode==='local'?'selected':''}>本地 Ollama</option></select>
+        <label>baseUrl</label><input id="cbase" value="${esc(curator.baseUrl||'')}" placeholder="https://api.deepseek.com / http://127.0.0.1:11434">
+        <label>apiKey</label><input id="ckey" value="${esc(curator.apiKey||'')}" placeholder="云端模式必填">
+        <label>model</label><input id="cmodel" value="${esc(curator.model||'')}" placeholder="deepseek-chat / qwen2.5:3b">
+        <label>日预算</label><input id="cbudget" type="number" value="${cfg.dailyTokenBudget??100000}">
+        <label></label><div class="full" style="display:flex;gap:8px"><button class="btn" onclick="curatorSelfCheck()">连通性自检</button><button class="btn primary" onclick="saveCurator()">保存</button></div>
+        <label></label><div class="full hint" id="ccheck">${esc(check.check.detail)}</div>
+      </div>
+      <p class="hint" style="margin-top:15px;max-width:520px">三档分工：轻梦复核用快模型、深梦蒸馏用强模型、写门裁决用最便宜档——全异步、独立配额、超预算熔断。深梦里还管两件事：<b>冲突仲裁</b>（新旧规矩打架时提案你拍板）与<b>时效改写</b>（"推进中"自动追上现实，旧文留痕）。</p>
+      <h3 style="margin-top:18px;font:600 15px var(--serif);letter-spacing:2px">📜 项目对话（馆长可见）</h3>
+      <div style="display:flex;gap:8px;margin:9px 0">
+        <select id="dlgProj" style="flex:1"><option value="">全部对话</option>${(window.__ov?.projects?Object.entries(window.__ov.projects):[]).map(([id,name])=>`<option value="${esc(id)}">${esc(name)}</option>`).join('')}</select>
+        <button class="btn" onclick="loadDialogue()">查看</button>
+      </div>
+      <div id="dlgBox" class="hint" style="max-height:220px;overflow:auto;border:1px solid var(--hair);padding:9px;background:var(--card)">捕获引擎每轮对话都会记录到这里（含路由命中的项目域），馆长问答时会自动带上这些摘录作为上下文。</div>
+    </div>
+  </div>`
+}
+async function askCurator(){
+  const q=$('#askQ').value.trim();if(!q)return
+  const log=$('#chatLog')
+  log.insertAdjacentHTML('beforeend',`<div class="bubble mine"><div class="who">你</div>${esc(q)}</div>`)
+  $('#askQ').value=''
+  log.scrollTop=log.scrollHeight
+  const r=await jpost('/curator/ask',{q})
+  const src=(r.sources||[]).map(s=>s.title).join('、')
+  log.insertAdjacentHTML('beforeend',`<div class="bubble"><div class="who">馆长${r.usedModel?'':' · 模型不可用，直引'}</div>${esc(r.answer)}${src?`<div class="src">来源：${esc(src)}</div>`:''}</div>`)
+  log.scrollTop=log.scrollHeight
+}
+async function clearCuratorChat(){
+  const r=await jpost('/curator/chat/clear')
+  toast(r.ok?`已清空 ${r.cleared} 条对话历史`:'清空失败：'+(r.error||''))
+  if(r.ok)renderCurator()
+}
+async function curatorSelfCheck(){const r=await jget('/curator/selfcheck');$('#ccheck').textContent=(r.check.ok?'✅ ':'❌ ')+r.check.detail+(r.warnings?.length?'；'+r.warnings.join('；'):'')+` · 预算 ${r.budget?r.budget.used+'/'+r.budget.limit:''}`}
+async function loadDialogue(){
+  const pid=$('#dlgProj').value
+  const r=await jget('/curator/sessions'+(pid?`?projectId=${encodeURIComponent(pid)}`:'')+'&limit=40')
+  const items=r.items||[]
+  $('#dlgBox').innerHTML=items.length
+    ?items.map(m=>`<div style="margin:5px 0"><b style="color:${m.role==='user'?'var(--pine)':'var(--azure)'}">${m.role==='user'?'用户':'助手'}</b> <span class="mm">${fmt(m.created_at)}${m.project_id?` · ${esc(m.project_id)}`:''}</span><br>${esc(String(m.content).slice(0,140))}${String(m.content).length>140?'…':''}</div>`).join('')
+    :'还没有对话流水。正常聊几轮（每轮 >200 字）后这里会出现记录。'
+}
+async function saveCurator(){
+  const patch={dailyTokenBudget:Number($('#cbudget').value),curator:{mode:$('#cmode').value,baseUrl:$('#cbase').value,apiKey:$('#ckey').value,model:$('#cmodel').value}}
+  const r=await jpost('/config',{patch});toast(r.ok?'已保存':'保存失败：'+r.error)
+}
+
+/* ── 个性化（v3）：全局指令 + 按工作区指令 ── */
+async function renderPersona(){
+  const r=await jget('/persona')
+  const items=r.items||[]
+  $('#view').innerHTML=`<h2 class="view-title">🖌 个性化</h2>
+  <div class="split">
+    <div class="panel-box">
+      <h3 style="font:600 15px var(--serif);letter-spacing:2px;margin-bottom:12px">已有指令 · ${items.length} 条</h3>
+      ${items.map(it=>`
+        <div class="mini-card" style="margin-bottom:11px;padding:11px 14px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="tag ${it.scope==='global'?'ok':'warn'}">${it.scope==='global'?'全局':'工作区'}</span>
+            <b>${esc(it.scope==='global'?'所有会话生效':(it.workspace||it.match||''))}</b>
+            <span style="flex:1"></span>
+            <button class="btn" onclick="togglePersona('${esc(it.id)}',${it.enabled?0:1})">${it.enabled?'停用':'启用'}</button>
+            <button class="btn danger" onclick="delPersona('${esc(it.id)}')">删除</button>
+          </div>
+          <pre style="white-space:pre-wrap;margin:9px 0 7px;font:inherit;font-size:13px">${esc(it.content)}</pre>
+          <div class="mm">${it.enabled?'✓ 注入中':'已停用'}${it.match?` · 命中词：${esc(it.match)}`:''} · 更新于 ${fmt(it.updated_at)}</div>
+        </div>`).join('')
+      }
+      ${items.length?'':'<div class="empty"><div class="big">还没有个性化指令</div>全局指令对所有会话常驻注入；工作区指令只在对话命中关键词（或路由到对应项目域）时注入，跨项目对话不受污染。</div>'}
+      <p class="hint">与「设置 → 个人配置」的关系：这里的指令由九层之台随记忆一起注入，全局段进常驻区、工作区段按需注入，均不受画像 30 条预算限制（独立计数，设置页可见注入 token）。</p>
+    </div>
+    <div class="panel-box">
+      <h3 style="font:600 15px var(--serif);letter-spacing:2px;margin-bottom:12px">新增 / 修改指令</h3>
+      <div class="form-grid">
+        <label>类型</label><select id="pScope" onchange="document.getElementById('pWsRow').style.display=this.value==='workspace'?'contents':'none'"><option value="global">全局指令（所有会话）</option><option value="workspace">按工作区（命中生效）</option></select>
+        <div id="pWsRow" style="display:none;contents">
+          <label>工作区名</label><input id="pWs" placeholder="例如：南京文旅短视频">
+          <label>命中关键词</label><input id="pMatch" placeholder="逗号分隔，任一命中即注入：南京文旅,牛肉锅贴,锦宁">
+        </div>
+        <label>指令内容</label><textarea id="pContent" rows="7" placeholder="写法与「个人配置」一致。例如：本工作区所有交付物单文件、不带 URL；台词纯人话，严禁网络梗整句……"></textarea>
+        <label>编辑已有</label><input id="pEditId" placeholder="留空=新增；填指令 ID 即为修改">
+        <label></label><div class="full" style="display:flex;gap:8px"><button class="btn primary" onclick="savePersona()">保存</button><button class="btn" onclick="renderPersona()">刷新</button></div>
+      </div>
+    </div>
+  </div>`
+}
+async function savePersona(){
+  const content=$('#pContent').value.trim()
+  if(!content)return toast('请先写指令内容')
+  const scope=$('#pScope').value
+  const body={scope,content,enabled:true}
+  const editId=$('#pEditId').value.trim()
+  if(editId)body.id=editId
+  if(scope==='workspace'){
+    body.workspace=$('#pWs').value.trim()
+    body.match=$('#pMatch').value.trim()
+    if(!body.match&&!body.workspace)return toast('工作区指令需要命中关键词或工作区名')
+  }
+  const r=await jpost('/persona',body)
+  if(!r.ok&&String(r.error||'').includes('未知路由'))return toast('后端是旧版：请完全退出并重启 DeepSeek Harness 后再保存')
+  toast(r.ok?(editId?'已更新':'已保存'):'保存失败：'+(r.error||''))
+  if(r.ok){$('#pContent').value='';$('#pEditId').value='';renderPersona()}
+}
+async function togglePersona(id,enabled){jpost('/persona',{id,enabled:!!enabled}).then(r=>{toast(r.ok?(enabled?'已启用':'已停用'):'操作失败');if(r.ok)renderPersona()})}
+async function delPersona(id){const r=await jpost('/persona/delete',{id});toast(r.ok?'已删除':'删除失败');if(r.ok)renderPersona()}
+
+/* ── 设置 ── */
+async function renderSettings(){
+  const cfg=(await jget('/config')).config
+  $('#view').innerHTML=`<h2 class="view-title">⚙ 设置</h2>
+  <div class="form-grid">
+    <label>自动捕获</label><select id="sCap"><option value="true" ${cfg.captureEnabled!==false?'selected':''}>开（自动听对话）</option><option value="false" ${cfg.captureEnabled===false?'selected':''}>关</option></select>
+    <label>捕获最短字数</label><input id="sMinChars" type="number" value="${cfg.captureMinChars??200}">
+    <label>捕获冷却(秒)</label><input id="sCool" type="number" value="${Math.round((cfg.captureCooldownMs??120000)/1000)}">
+    <label>每日上限</label><input id="sCapDay" type="number" value="${cfg.maxCapturesPerDay??60}">
+    <label>记忆注入</label><select id="sInject"><option value="false" ${cfg.injectEnabled!==true?'selected':''}>关（默认，旧插件仍是通道）</option><option value="true" ${cfg.injectEnabled===true?'selected':''}>开</option></select>
+    <label>轻梦间隔(轮)</label><input id="sLight" type="number" value="${cfg.lightEveryTurns??8}">
+    <label>深梦空闲(分钟)</label><input id="sDeep" type="number" value="${cfg.deepIdleMinutes??30}">
+    <label>峰时抑制</label><select id="sPeak"><option value="true" ${cfg.peakSuppress!==false?'selected':''}>开（09–12 / 14–18 不跑）</option><option value="false" ${cfg.peakSuppress===false?'selected':''}>关</option></select>
+    <label>画像预算(条)</label><input id="sPMax" type="number" value="${cfg.profileBudgetMax??30}">
+    <label>画像每条字数</label><input id="sPChars" type="number" value="${cfg.profileBudgetChars??200}">
+    <label>审核策略</label><select id="sAudit"><option value="all" ${cfg.auditMode==='all'?'selected':''}>人工审核（建议）</option><option value="none" ${cfg.auditMode==='none'?'selected':''}>自动通过</option></select>
+    <label>小额自动批</label><input id="sAuto" type="number" value="${cfg.autoApproveLowRiskLimit??3}">
+    <label></label><div class="full"><button class="btn primary" onclick="saveSettings()">保存设置</button> <span class="hint" id="saveHint"></span></div>
+  </div>
+  <h2 class="view-title" style="margin-top:26px">备份与导出</h2>
+  <div class="rows">
+    <div class="row"><h3>快照</h3><p>深梦前自动快照；手动快照随时可打。备份 = db+wal+shm 三件。</p>
+      <div class="card-actions" style="margin-top:9px"><button class="btn" onclick="makeSnapshot()">立即快照</button><button class="btn" onclick="doExport()">导出 Markdown</button></div>
+      <div id="snapList" style="margin-top:11px"></div></div>
+  </div>`
+  listSnaps()
+}
+async function saveSettings(){
+  const patch={captureEnabled:$('#sCap').value==='true',captureMinChars:Number($('#sMinChars').value),captureCooldownMs:Number($('#sCool').value)*1000,maxCapturesPerDay:Number($('#sCapDay').value),injectEnabled:$('#sInject').value==='true',lightEveryTurns:Number($('#sLight').value),deepIdleMinutes:Number($('#sDeep').value),peakSuppress:$('#sPeak').value==='true',profileBudgetMax:Number($('#sPMax').value),profileBudgetChars:Number($('#sPChars').value),auditMode:$('#sAudit').value,autoApproveLowRiskLimit:Number($('#sAuto').value)}
+  const r=await jpost('/config',{patch})
+  $('#saveHint').textContent=r.ok?'已保存（重启 DSH 后全部生效）':'保存失败：'+r.error
+}
+async function makeSnapshot(){const r=await jpost('/snapshot');toast(r.ok?'快照已创建：'+r.id:'失败：'+r.error);listSnaps()}
+async function doExport(){const r=await jpost('/export');toast(r.ok?`已导出 ${r.files} 个 md`:'失败：'+r.error)}
+async function listSnaps(){const r=await jget('/snapshots');$('#snapList').innerHTML=r.items.length?r.items.map(s=>`<div class="receipt"><b>${esc(s.id)}</b> · schema v${s.manifest?.schema_version??'?'} · ${esc(s.manifest?.created_at??'')}</div>`).join(''):'<p class="hint">还没有快照。</p>'}
+
+/* ── 键盘导航 ── */
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return
+  const h=location.hash||'#/overview'
+  if(!h.startsWith('#/overview')&&h!=='#/')return
+  if(e.key==='/'&&document.activeElement?.tagName!=='INPUT'){e.preventDefault();$('#q').focus();return}
+  if(e.key==='j'||e.key==='k'){
+    const cards=[...document.querySelectorAll('.card')];if(!cards.length)return
+    SEL=e.key==='j'?Math.min(cards.length-1,SEL+1):Math.max(0,SEL-1)
+    cards.forEach((c,i)=>c.classList.toggle('selected',i===SEL))
+    cards[SEL]?.scrollIntoView({block:'nearest'})
+  }else if(e.key==='Enter'&&SEL>=0){const c=document.querySelectorAll('.card')[SEL];if(c)c.click()}
+  else if(e.key==='Escape'){document.querySelectorAll('.card .detail').forEach(d=>d.style.display='none');SEL=-1;closeAdd()}
+})
+
+route()
+</script>
+</body>
+</html>
